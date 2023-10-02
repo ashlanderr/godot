@@ -114,8 +114,8 @@ constexpr double ZOOM_FREELOOK_MAX = 1'000'000'000'000;
 constexpr float ZOOM_FREELOOK_MAX = 10'000;
 #endif
 
-constexpr real_t MIN_Z = 0.01;
-constexpr real_t MAX_Z = 1000000.0;
+constexpr real_t MIN_Z = 0.001;
+constexpr real_t MAX_Z = 9e18;
 
 constexpr real_t MIN_FOV = 0.01;
 constexpr real_t MAX_FOV = 179;
@@ -8526,7 +8526,7 @@ Node3DEditor::Node3DEditor() {
 	settings_znear = memnew(SpinBox);
 	settings_znear->set_max(MAX_Z);
 	settings_znear->set_min(MIN_Z);
-	settings_znear->set_step(0.01);
+	settings_znear->set_step(MIN_Z);
 	settings_znear->set_value(EDITOR_GET("editors/3d/default_z_near"));
 	settings_znear->set_select_all_on_focus(true);
 	settings_vbc->add_margin_child(TTR("View Z-Near:"), settings_znear);
