@@ -146,6 +146,10 @@ vec2 multiview_uv(vec2 uv) {
 }
 #endif //USE_MULTIVIEW
 
+layout(location = 25) out smooth float frag_depth;
+
+layout(location = 26) out flat float is_perspective;
+
 invariant gl_Position;
 
 #GLOBALS
@@ -463,6 +467,9 @@ void vertex_shader(vec3 vertex_input,
 	combined_projected = combined_projection * vec4(vertex_interp, 1.0);
 #endif
 
+	is_perspective = float(projection_matrix[2][3] == -1.0);
+	frag_depth = gl_Position.w + 1.0;
+
 #ifdef MOTION_VECTORS
 	screen_pos = gl_Position;
 #endif
@@ -531,6 +538,7 @@ void main() {
 #VERSION_DEFINES
 
 #define SHADER_IS_SRGB false
+#define LOGZ_COEFF 0.0316873679646296
 
 /* Specialization Constants (Toggles) */
 
@@ -615,6 +623,10 @@ vec2 multiview_uv(vec2 uv) {
 	return uv;
 }
 #endif //USE_MULTIVIEW
+
+layout(location = 25) in smooth float frag_depth;
+
+layout(location = 26) in flat float is_perspective;
 
 //defines to keep compatibility with vertex
 
@@ -2315,5 +2327,24 @@ void main() {
 		discard;
 #endif
 
+	if (is_perspective != 0.0) {
+		// Logarithmic depth buffer.
+		gl_FragDepth = log2(frag_depth) * LOGZ_COEFF;
+	} else {
+		// Do not use a logarithmic depth buffer for orthographic projections.
+		// Essentially a no-op, but gl_FragDepth must be written to either in all
+		// code paths or not at all.
+		gl_FragDepth = gl_FragCoord.z;
+	}
+
 	fragment_shader(scene_data_block.data);
 }
+
+/*
+Inverse logarithmic depth transformation:
+
+float depth = texture(depth_texture, SCREEN_UV).r;
+float w = exp2(depth / LOGZ_COEFF) - 1.0;
+vec3 view_pos = (INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, 0.0, 1.0)).xyz;
+view_pos *= w;
+*/
